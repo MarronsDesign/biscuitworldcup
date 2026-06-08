@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Biscuit World Cup Bracket Generator</title>
+  <style>
+    :root {
+      --bg: #fff8ed;
+      --panel: #fffdf9;
+      --panel-strong: #fff3df;
+      --text: #2f261d;
+      --muted: #746658;
+      --line: #dfc8aa;
+      --accent: #9b5a2e;
+      --accent-dark: #6f3d1d;
+      --accent-soft: #ead2b6;
+      --good: #1f7a4c;
+      --warn: #9a5b00;
+      --bad: #a13b31;
+      --shadow: 0 18px 50px rgba(72, 42, 16, 0.12);
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --round-width: 260px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(155, 90, 46, 0.16), transparent 32rem),
+        linear-gradient(135deg, #fffaf2 0%, var(--bg) 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1480px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 26px 0 42px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4.2vw, 4.2rem);
+      letter-spacing: -0.06em;
+      line-height: 0.96;
+    }
+
+    .intro {
+      max-width: 780px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.55;
+    }
+
+    .badge {
+      justify-self: end;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: var(--accent-dark);
+      font-weight: 700;
+      box-shadow: var(--shadow);
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255, 253, 249, 0.88);
+      border: 1px solid rgba(223, 200, 170, 0.9);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .controls {
+      position: sticky;
+      top: 14px;
+    }
+
+    .panel-heading {
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel-strong), rgba(255, 253, 249, 0.75));
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-heading p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .panel-body { padding: 16px 18px 18px; }
+
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: var(--accent-dark);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fffefa;
+      color: var(--text);
+      font: inherit;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    textarea {
+      min-height: 360px;
+      resize: vertical;
+      padding: 13px 14px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    input[type="text"] { padding: 12px 13px; }
+
+    textarea:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(155, 90, 46, 0.12);
+    }
+
+    .add-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      margin: 13px 0 0;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: var(--radius-md);
+      min-height: 44px;
+      padding: 11px 13px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+      touch-action: manipulation;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button:disabled { cursor: not-allowed; opacity: 0.48; transform: none; }
+
+    .primary {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      box-shadow: 0 12px 24px rgba(111, 61, 29, 0.22);
+    }
+
+    .secondary {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      border: 1px solid rgba(111, 61, 29, 0.12);
+    }
+
+    .ghost {
+      background: #fffefa;
+      color: var(--accent-dark);
+      border: 1px solid var(--line);
+    }
+
+    .danger {
+      background: #f5ddd8;
+      color: var(--bad);
+      border: 1px solid rgba(161, 59, 49, 0.18);
+    }
+
+    .status-card {
+      margin-top: 14px;
+      padding: 13px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: #fffefa;
+      font-size: 0.92rem;
+      line-height: 1.48;
+    }
+
+    .status-card strong { display: block; margin-bottom: 3px; }
+    .status-card.good { border-color: rgba(31, 122, 76, 0.35); background: rgba(31, 122, 76, 0.06); }
+    .status-card.warn { border-color: rgba(154, 91, 0, 0.35); background: rgba(154, 91, 0, 0.06); }
+    .status-card.bad { border-color: rgba(161, 59, 49, 0.35); background: rgba(161, 59, 49, 0.06); }
+
+    .helper-list {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .bracket-panel {
+      min-height: 620px;
+    }
+
+    .bracket-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 243, 223, 0.76);
+    }
+
+    .bracket-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fffefa;
+      padding: 6px 10px;
+      font-weight: 800;
+      color: var(--accent-dark);
+    }
+
+    .bracket-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .small-btn {
+      min-height: 36px;
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      border-radius: 999px;
+    }
+
+    .bracket-scroll {
+      overflow-x: auto;
+      overflow-y: visible;
+      padding: 18px;
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .rounds {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      min-height: 500px;
+    }
+
+    .round {
+      flex: 0 0 var(--round-width);
+      scroll-snap-align: start;
+    }
+
+    .round-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+      margin-bottom: 12px;
+      padding: 0 2px;
+    }
+
+    .round-title {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .round-count {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .match-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .match {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fffefa;
+      overflow: hidden;
+      box-shadow: 0 8px 18px rgba(72, 42, 16, 0.06);
+    }
+
+    .match-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: rgba(234, 210, 182, 0.35);
+      border-bottom: 1px solid rgba(223, 200, 170, 0.75);
+    }
+
+    .entrant {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-radius: 0;
+      min-height: 48px;
+      padding: 10px 11px;
+      background: #fffefa;
+      color: var(--text);
+      text-align: left;
+      border-bottom: 1px solid rgba(223, 200, 170, 0.55);
+      font-weight: 750;
+    }
+
+    .entrant:last-child { border-bottom: 0; }
+    .entrant:hover { background: #fff4e2; transform: none; }
+    .entrant.empty, .entrant.bye {
+      cursor: default;
+      color: rgba(116, 102, 88, 0.72);
+      background: #fbf4ea;
+      font-weight: 700;
+    }
+
+    .entrant.empty:hover, .entrant.bye:hover { background: #fbf4ea; }
+
+    .entrant.winner {
+      background: rgba(31, 122, 76, 0.1);
+      color: #155535;
+      box-shadow: inset 4px 0 0 var(--good);
+    }
+
+    .entrant .tick {
+      flex: 0 0 auto;
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: rgba(31, 122, 76, 0.16);
+      color: var(--good);
+      font-size: 0.82rem;
+      opacity: 0;
+    }
+
+    .entrant.winner .tick { opacity: 1; }
+
+    .match.auto .match-label span:last-child { color: var(--good); }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 480px;
+      text-align: center;
+      color: var(--muted);
+      padding: 30px;
+    }
+
+    .empty-state-inner {
+      max-width: 520px;
+      padding: 26px;
+      border: 1px dashed var(--line);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 253, 249, 0.7);
+    }
+
+    .empty-state h2 {
+      margin: 0 0 8px;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .champion {
+      display: none;
+      margin: 0 18px 18px;
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, #fff4d6, #fffefa);
+      border: 1px solid #e0bd72;
+      box-shadow: 0 10px 28px rgba(154, 91, 0, 0.12);
+    }
+
+    .champion.show { display: block; }
+    .champion span { display: block; color: var(--muted); font-size: 0.88rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
+    .champion strong { display: block; font-size: clamp(1.4rem, 3.2vw, 2.4rem); letter-spacing: -0.04em; margin-top: 3px; color: var(--accent-dark); }
+
+    .note {
+      padding: 0 18px 18px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .controls { position: static; }
+      textarea { min-height: 260px; }
+      header { grid-template-columns: 1fr; }
+      .badge { justify-self: start; }
+    }
+
+    @media (max-width: 640px) {
+      .page { width: min(100% - 20px, 1480px); padding-top: 16px; }
+      .button-row { grid-template-columns: 1fr; }
+      .add-row { grid-template-columns: 1fr; }
+      .bracket-scroll { padding: 12px; }
+      .round { flex-basis: min(88vw, 330px); }
+      .bracket-topbar { align-items: flex-start; }
+      .bracket-actions { width: 100%; }
+      .bracket-actions button { flex: 1 1 130px; }
+      h1 { font-size: clamp(2rem, 12vw, 3.2rem); }
+    }
+
+    @media print {
+      body { background: white; }
+      .controls, .bracket-actions, .note, .badge { display: none !important; }
+      .page { width: 100%; padding: 0; }
+      .layout { display: block; }
+      .panel { box-shadow: none; border: 0; }
+      .bracket-scroll { overflow: visible; padding: 0; }
+      .rounds { gap: 8px; transform: scale(0.82); transform-origin: top left; }
+      .round { flex-basis: 230px; }
+      .match { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>Biscuit World Cup</h1>
+        <p class="intro">Create a random knockout bracket, click each winner to move them into the next round, and reset or replace the biscuit list whenever needed.</p>
+      </div>
+      <div class="badge" aria-label="No seeding badge">Random draw, no seeding</div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel controls" aria-label="Bracket controls">
+        <div class="panel-heading">
+          <h2>Entries</h2>
+          <p>One biscuit per line. The draw is randomised each time you generate a bracket.</p>
+        </div>
+        <div class="panel-body">
+          <label for="entries">Competitors</label>
+          <textarea id="entries" spellcheck="false"></textarea>
+
+          <div class="add-row">
+            <input id="newEntry" type="text" placeholder="Add another biscuit" aria-label="Add another biscuit" />
+            <button class="secondary" id="addEntryBtn" type="button">Add</button>
+          </div>
+
+          <div id="compatibility" class="status-card" role="status" aria-live="polite"></div>
+
+          <div class="button-row">
+            <button class="primary" id="generateBtn" type="button">Generate random bracket</button>
+            <button class="secondary" id="resetDefaultBtn" type="button">Reset biscuits</button>
+            <button class="ghost" id="shuffleListBtn" type="button">Shuffle list only</button>
+            <button class="danger" id="clearEntriesBtn" type="button">Clear entries</button>
+          </div>
+
+          <ul class="helper-list">
+            <li>Best bracket sizes are 2, 4, 8, 16, 32, 64 or 128 entries.</li>
+            <li>Other numbers still work, but the generator adds automatic byes.</li>
+            <li>Click an entrant in each match to send it through to the next round.</li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="panel bracket-panel" aria-label="Generated bracket">
+        <div class="bracket-topbar">
+          <div class="bracket-meta" id="bracketMeta">
+            <span class="pill">No bracket generated yet</span>
+          </div>
+          <div class="bracket-actions">
+            <button class="ghost small-btn" id="clearResultsBtn" type="button">Clear results</button>
+            <button class="ghost small-btn" id="printBtn" type="button">Print / save PDF</button>
+          </div>
+        </div>
+
+        <div id="champion" class="champion" aria-live="polite"></div>
+
+        <div class="bracket-scroll" id="bracketScroll">
+          <div id="bracket" class="empty-state">
+            <div class="empty-state-inner">
+              <h2>Ready for the draw</h2>
+              <p>Use the prefilled biscuit list or replace it with your own entries, then generate a random bracket.</p>
+            </div>
+          </div>
+        </div>
+        <p class="note">On mobile, swipe sideways through the rounds. Byes are advanced automatically.</p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const DEFAULT_ENTRIES = [
+      "custard creme",
+      "bourbon",
+      "rich tea",
+      "digestive",
+      "hobnob/oat biscuit",
+      "shortcake",
+      "fruit shortcake",
+      "malted milk",
+      "jam creme/jammie dodger",
+      "ginger nut",
+      "nice",
+      "oreo",
+      "choc-chip cookie (maryland style)",
+      "fig roll",
+      "garibaldi",
+      "chocolate finger",
+      "chocolate digestive",
+      "party ring",
+      "pink wafers",
+      "chocolate malted milk",
+      "chocolate hobnob/oat biscuit",
+      "shortbread",
+      "viennese whirls",
+      "danish butter biscuits"
+    ];
+
+    const entriesEl = document.getElementById("entries");
+    const newEntryEl = document.getElementById("newEntry");
+    const compatibilityEl = document.getElementById("compatibility");
+    const bracketEl = document.getElementById("bracket");
+    const bracketMetaEl = document.getElementById("bracketMeta");
+    const championEl = document.getElementById("champion");
+    const generateBtn = document.getElementById("generateBtn");
+    const resetDefaultBtn = document.getElementById("resetDefaultBtn");
+    const shuffleListBtn = document.getElementById("shuffleListBtn");
+    const clearEntriesBtn = document.getElementById("clearEntriesBtn");
+    const addEntryBtn = document.getElementById("addEntryBtn");
+    const clearResultsBtn = document.getElementById("clearResultsBtn");
+    const printBtn = document.getElementById("printBtn");
+    const bracketScroll = document.getElementById("bracketScroll");
+
+    let rounds = [];
+    let generatedInfo = null;
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normaliseEntries() {
+      const seen = new Set();
+      return entriesEl.value
+        .split(/\r?\n/)
+        .map(item => item.trim())
+        .filter(Boolean)
+        .filter(item => {
+          const key = item.toLocaleLowerCase();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    }
+
+    function setEntries(list) {
+      entriesEl.value = list.join("\n");
+      updateCompatibility();
+    }
+
+    function isPowerOfTwo(n) {
+      return n > 0 && (n & (n - 1)) === 0;
+    }
+
+    function nextPowerOfTwo(n) {
+      if (n < 2) return 2;
+      return 2 ** Math.ceil(Math.log2(n));
+    }
+
+    function previousPowerOfTwo(n) {
+      if (n < 2) return 0;
+      return 2 ** Math.floor(Math.log2(n));
+    }
+
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function updateCompatibility() {
+      const entries = normaliseEntries();
+      const count = entries.length;
+      generateBtn.disabled = count < 2 || count > 128;
+      shuffleListBtn.disabled = count < 2;
+
+      if (count < 2) {
+        compatibilityEl.className = "status-card bad";
+        compatibilityEl.innerHTML = `<strong>${count} entr${count === 1 ? "y" : "ies"}</strong>Add at least 2 entries to generate a bracket.`;
+        return;
+      }
+
+      if (count > 128) {
+        compatibilityEl.className = "status-card bad";
+        compatibilityEl.innerHTML = `<strong>${count} entries</strong>This version is capped at 128 entries so it stays usable on screen.`;
+        return;
+      }
+
+      const size = nextPowerOfTwo(count);
+      const lower = previousPowerOfTwo(count - 1);
+      const byes = size - count;
+
+      if (isPowerOfTwo(count)) {
+        compatibilityEl.className = "status-card good";
+        compatibilityEl.innerHTML = `<strong>${count} entries</strong>Perfect clean bracket. No byes needed.`;
+      } else {
+        const removeText = lower >= 2 ? `or remove ${count - lower} to reach ${lower}` : "";
+        compatibilityEl.className = "status-card warn";
+        compatibilityEl.innerHTML = `<strong>${count} entries</strong>Works with a ${size}-slot bracket and ${byes} automatic bye${byes === 1 ? "" : "s"}. For a completely even bracket, add ${byes} ${byes === 1 ? "entry" : "entries"} to reach ${size}${removeText ? `, ${removeText}` : ""}.`;
+      }
+    }
+
+    function makeParticipant(name, index) {
+      return {
+        id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+        name
+      };
+    }
+
+    function buildInitialPairs(participants, bracketSize) {
+      const queue = shuffle(participants);
+      const pairCount = bracketSize / 2;
+      const byeCount = bracketSize - participants.length;
+      const pairs = [];
+
+      for (let i = 0; i < byeCount; i++) {
+        const player = queue.shift();
+        pairs.push(Math.random() > 0.5 ? [player, null] : [null, player]);
+      }
+
+      while (queue.length) {
+        const a = queue.shift() || null;
+        const b = queue.shift() || null;
+        pairs.push(Math.random() > 0.5 ? [a, b] : [b, a]);
+      }
+
+      while (pairs.length < pairCount) {
+        pairs.push([null, null]);
+      }
+
+      return shuffle(pairs);
+    }
+
+    function createRounds(entries) {
+      const participants = entries.map(makeParticipant);
+      const bracketSize = nextPowerOfTwo(participants.length);
+      const initialPairs = buildInitialPairs(participants, bracketSize);
+      const roundData = [];
+
+      roundData.push(initialPairs.map((pair, index) => ({
+        id: `r0-m${index}`,
+        slots: pair,
+        winner: null
+      })));
+
+      let matchCount = initialPairs.length / 2;
+      let roundIndex = 1;
+      while (matchCount >= 1) {
+        roundData.push(Array.from({ length: matchCount }, (_, index) => ({
+          id: `r${roundIndex}-m${index}`,
+          slots: [null, null],
+          winner: null
+        })));
+        matchCount = matchCount / 2;
+        roundIndex++;
+      }
+
+      return { roundData, bracketSize, byeCount: bracketSize - entries.length };
+    }
+
+    function roundName(matchCount) {
+      if (matchCount === 1) return "Final";
+      if (matchCount === 2) return "Semi-finals";
+      if (matchCount === 4) return "Quarter-finals";
+      return `Round of ${matchCount * 2}`;
+    }
+
+    function validateWinner(match) {
+      if (!match.winner) return;
+      const valid = match.slots.some(slot => slot && slot.id === match.winner.id);
+      if (!valid) match.winner = null;
+    }
+
+    function autoPickByes(match) {
+      const filled = match.slots.filter(Boolean);
+      if (filled.length === 1) {
+        match.winner = filled[0];
+      }
+    }
+
+    function rebuildProgression() {
+      for (let r = 1; r < rounds.length; r++) {
+        rounds[r].forEach(match => {
+          match.slots = [null, null];
+        });
+      }
+
+      for (let r = 0; r < rounds.length; r++) {
+        rounds[r].forEach(validateWinner);
+        rounds[r].forEach(autoPickByes);
+
+        if (r < rounds.length - 1) {
+          rounds[r].forEach((match, matchIndex) => {
+            if (!match.winner) return;
+            const nextMatch = rounds[r + 1][Math.floor(matchIndex / 2)];
+            const nextSlot = matchIndex % 2;
+            nextMatch.slots[nextSlot] = match.winner;
+          });
+        }
+      }
+    }
+
+    function selectWinner(roundIndex, matchIndex, slotIndex) {
+      const match = rounds[roundIndex][matchIndex];
+      const participant = match.slots[slotIndex];
+      if (!participant) return;
+      match.winner = participant;
+      rebuildProgression();
+      renderBracket();
+    }
+
+    function clearAllResults() {
+      rounds.forEach(round => round.forEach(match => { match.winner = null; }));
+      rebuildProgression();
+      renderBracket();
+    }
+
+    function renderEntrant(participant, match, roundIndex, matchIndex, slotIndex) {
+      if (!participant) {
+        return `<button class="entrant bye" type="button" disabled><span>BYE</span><span></span></button>`;
+      }
+
+      const isWinner = match.winner && match.winner.id === participant.id;
+      return `
+        <button class="entrant ${isWinner ? "winner" : ""}" type="button" data-round="${roundIndex}" data-match="${matchIndex}" data-slot="${slotIndex}">
+          <span>${escapeHtml(participant.name)}</span>
+          <span class="tick" aria-hidden="true">✓</span>
+        </button>
+      `;
+    }
+
+    function renderBracket() {
+      if (!rounds.length) return;
+
+      rebuildProgression();
+
+      bracketEl.className = "rounds";
+      bracketEl.innerHTML = rounds.map((round, roundIndex) => {
+        const label = roundName(round.length);
+        const matchWord = round.length === 1 ? "match" : "matches";
+        return `
+          <section class="round" aria-label="${escapeHtml(label)}">
+            <div class="round-header">
+              <h2 class="round-title">${escapeHtml(label)}</h2>
+              <span class="round-count">${round.length} ${matchWord}</span>
+            </div>
+            <div class="match-list">
+              ${round.map((match, matchIndex) => {
+                const automatic = match.slots.filter(Boolean).length === 1;
+                return `
+                  <article class="match ${automatic ? "auto" : ""}">
+                    <div class="match-label"><span>Match ${matchIndex + 1}</span><span>${automatic ? "Auto bye" : "Pick winner"}</span></div>
+                    ${renderEntrant(match.slots[0], match, roundIndex, matchIndex, 0)}
+                    ${renderEntrant(match.slots[1], match, roundIndex, matchIndex, 1)}
+                  </article>
+                `;
+              }).join("")}
+            </div>
+          </section>
+        `;
+      }).join("");
+
+      bracketEl.querySelectorAll(".entrant[data-round]").forEach(button => {
+        button.addEventListener("click", () => {
+          selectWinner(
+            Number(button.dataset.round),
+            Number(button.dataset.match),
+            Number(button.dataset.slot)
+          );
+        });
+      });
+
+      updateChampion();
+      updateBracketMeta();
+    }
+
+    function updateChampion() {
+      const finalRound = rounds[rounds.length - 1];
+      const champion = finalRound && finalRound[0] && finalRound[0].winner;
+      if (champion) {
+        championEl.className = "champion show";
+        championEl.innerHTML = `<span>Champion</span><strong>${escapeHtml(champion.name)}</strong>`;
+      } else {
+        championEl.className = "champion";
+        championEl.innerHTML = "";
+      }
+    }
+
+    function updateBracketMeta() {
+      if (!generatedInfo) return;
+      const byeText = generatedInfo.byeCount === 0
+        ? "No byes"
+        : `${generatedInfo.byeCount} bye${generatedInfo.byeCount === 1 ? "" : "s"}`;
+      bracketMetaEl.innerHTML = `
+        <span class="pill">${generatedInfo.entryCount} entries</span>
+        <span class="pill">${generatedInfo.bracketSize}-slot bracket</span>
+        <span class="pill">${byeText}</span>
+      `;
+    }
+
+    function generateBracket() {
+      const entries = normaliseEntries();
+      if (entries.length < 2) {
+        updateCompatibility();
+        return;
+      }
+      if (entries.length > 128) {
+        updateCompatibility();
+        return;
+      }
+
+      const created = createRounds(entries);
+      rounds = created.roundData;
+      generatedInfo = {
+        entryCount: entries.length,
+        bracketSize: created.bracketSize,
+        byeCount: created.byeCount
+      };
+
+      rebuildProgression();
+      renderBracket();
+      bracketScroll.scrollTo({ left: 0, behavior: "smooth" });
+    }
+
+    function addEntry() {
+      const value = newEntryEl.value.trim();
+      if (!value) return;
+      const entries = normaliseEntries();
+      entries.push(value);
+      setEntries(entries);
+      newEntryEl.value = "";
+      newEntryEl.focus();
+    }
+
+    entriesEl.addEventListener("input", updateCompatibility);
+
+    addEntryBtn.addEventListener("click", addEntry);
+    newEntryEl.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addEntry();
+      }
+    });
+
+    generateBtn.addEventListener("click", generateBracket);
+
+    resetDefaultBtn.addEventListener("click", () => {
+      setEntries(DEFAULT_ENTRIES);
+      rounds = [];
+      generatedInfo = null;
+      championEl.className = "champion";
+      championEl.innerHTML = "";
+      bracketMetaEl.innerHTML = `<span class="pill">No bracket generated yet</span>`;
+      bracketEl.className = "empty-state";
+      bracketEl.innerHTML = `
+        <div class="empty-state-inner">
+          <h2>Default biscuits restored</h2>
+          <p>Generate a fresh random draw whenever you are ready.</p>
+        </div>
+      `;
+    });
+
+    clearEntriesBtn.addEventListener("click", () => {
+      setEntries([]);
+      entriesEl.focus();
+    });
+
+    shuffleListBtn.addEventListener("click", () => {
+      const entries = normaliseEntries();
+      if (entries.length < 2) return;
+      setEntries(shuffle(entries));
+    });
+
+    clearResultsBtn.addEventListener("click", () => {
+      if (!rounds.length) return;
+      clearAllResults();
+    });
+
+    printBtn.addEventListener("click", () => window.print());
+
+    setEntries(DEFAULT_ENTRIES);
+  </script>
+</body>
+</html>
