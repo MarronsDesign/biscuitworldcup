@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Biscuit World Cup Bracket Generator</title>
+  <style>
+    :root{
+      --bg:#171717;
+      --panel:#242424;
+      --panel-2:#2f2f2f;
+      --card:#f4efe4;
+      --card-2:#fffaf0;
+      --text:#f7f0e5;
+      --muted:#cfc5b6;
+      --line:#d8cdbd;
+      --accent:#f2b84b;
+      --accent-2:#ffd889;
+      --danger:#ff7878;
+      --good:#80d39b;
+      --shadow:0 16px 50px rgba(0,0,0,.32);
+      --radius:18px;
+      --row:8px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 20px 20px, rgba(255,255,255,.07) 1.4px, transparent 1.4px) 0 0/16px 16px,
+        linear-gradient(145deg,#171717 0%,#202020 47%,#111 100%);
+      min-height:100vh;
+    }
+
+    header{
+      padding:28px clamp(16px,4vw,48px) 18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background:linear-gradient(180deg,rgba(0,0,0,.22),rgba(0,0,0,0));
+    }
+
+    h1{
+      margin:0 0 8px;
+      font-size:clamp(2rem,5vw,4.4rem);
+      line-height:.95;
+      letter-spacing:-.065em;
+    }
+
+    .subtitle{
+      margin:0;
+      max-width:930px;
+      color:var(--muted);
+      font-size:clamp(.96rem,1.7vw,1.08rem);
+      line-height:1.55;
+    }
+
+    main{padding:22px clamp(12px,3vw,42px) 42px}
+
+    .app-shell{
+      display:grid;
+      grid-template-columns:minmax(285px,380px) minmax(0,1fr);
+      gap:18px;
+      align-items:start;
+    }
+
+    .controls,
+    .summary-card{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(36,36,36,.92);
+      box-shadow:var(--shadow);
+      border-radius:var(--radius);
+      overflow:hidden;
+    }
+
+    .controls{position:sticky;top:14px;z-index:20}
+
+    .section{
+      padding:18px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .section:last-child{border-bottom:0}
+
+    .section h2,
+    .summary-card h2{
+      margin:0 0 11px;
+      font-size:1.03rem;
+      letter-spacing:-.02em;
+    }
+
+    textarea{
+      width:100%;
+      min-height:340px;
+      resize:vertical;
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:14px;
+      background:#111;
+      color:var(--text);
+      padding:13px 14px;
+      line-height:1.42;
+      font:500 .95rem/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      outline:none;
+    }
+    textarea:focus{border-color:rgba(242,184,75,.75);box-shadow:0 0 0 4px rgba(242,184,75,.12)}
+
+    .button-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    button,
+    .fake-button{
+      appearance:none;
+      border:0;
+      border-radius:999px;
+      padding:11px 13px;
+      background:#3d3d3d;
+      color:var(--text);
+      font-weight:800;
+      font-size:.88rem;
+      cursor:pointer;
+      transition:transform .12s ease,background .12s ease,box-shadow .12s ease;
+      min-height:42px;
+    }
+    button:hover{transform:translateY(-1px);background:#4b4b4b}
+    button:active{transform:translateY(0)}
+    .primary{background:linear-gradient(180deg,var(--accent-2),var(--accent));color:#2a1b00;box-shadow:0 9px 24px rgba(242,184,75,.2)}
+    .primary:hover{background:linear-gradient(180deg,#ffe0a0,#ffc557)}
+    .danger{background:#563232;color:#ffdede}
+    .danger:hover{background:#6d3a3a}
+    .wide{grid-column:1/-1}
+
+    .mini-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;color:var(--muted);font-size:.88rem}
+    .mini-row input{width:18px;height:18px;accent-color:var(--accent)}
+
+    .compatibility{
+      display:grid;
+      gap:10px;
+      font-size:.94rem;
+      line-height:1.45;
+    }
+    .pill-row{display:flex;flex-wrap:wrap;gap:8px}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:1px solid rgba(255,255,255,.11);
+      background:#161616;
+      color:var(--muted);
+      border-radius:999px;
+      padding:7px 9px;
+      font-size:.82rem;
+      font-weight:800;
+    }
+    .pill.good{color:#ddffe7;border-color:rgba(128,211,155,.38);background:rgba(128,211,155,.12)}
+    .pill.warn{color:#fff0c8;border-color:rgba(242,184,75,.38);background:rgba(242,184,75,.11)}
+    .pill.bad{color:#ffdede;border-color:rgba(255,120,120,.4);background:rgba(255,120,120,.1)}
+
+    .hint{
+      margin:0;
+      color:var(--muted);
+      font-size:.88rem;
+      line-height:1.48;
+    }
+
+    .summary-card{margin-bottom:18px;padding:18px;background:rgba(36,36,36,.75)}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .metric{background:#111;border:1px solid rgba(255,255,255,.09);border-radius:15px;padding:12px}
+    .metric strong{display:block;font-size:1.3rem;color:var(--accent-2);line-height:1}
+    .metric span{display:block;margin-top:6px;color:var(--muted);font-size:.8rem;font-weight:750;text-transform:uppercase;letter-spacing:.045em}
+
+    .bracket-area{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:var(--radius);
+      background:rgba(20,20,20,.86);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .bracket-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:13px 15px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.22);
+    }
+    .bracket-toolbar strong{font-size:.95rem}
+    .bracket-toolbar span{color:var(--muted);font-size:.85rem}
+
+    .scroll-note{display:none;color:var(--muted);font-size:.82rem;margin:0 0 0 auto}
+
+    .bracket-scroll{
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+      max-width:100%;
+    }
+
+    .bracket{
+      position:relative;
+      display:grid;
+      grid-auto-flow:column;
+      column-gap:58px;
+      padding:26px 42px 42px;
+      min-width:max-content;
+      isolation:isolate;
+    }
+
+    .connector-svg{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      overflow:visible;
+    }
+
+    .connector-svg path{
+      stroke:rgba(216,205,189,.78);
+      stroke-width:2.5;
+      fill:none;
+      vector-effect:non-scaling-stroke;
+    }
+
+    .round-title{
+      grid-row:1 / span 3;
+      align-self:start;
+      position:sticky;
+      top:0;
+      z-index:4;
+      display:flex;
+      align-items:center;
+      min-height:30px;
+      padding:0 2px 8px;
+      font-size:.86rem;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.085em;
+      font-weight:900;
+    }
+
+    .match-card{
+      width:265px;
+      min-height:58px;
+      border-radius:13px;
+      background:rgba(244,239,228,.1);
+      border:1px solid rgba(244,239,228,.15);
+      box-shadow:0 10px 18px rgba(0,0,0,.22);
+      overflow:hidden;
+      z-index:3;
+      align-self:center;
+    }
+
+    .competitor{
+      width:100%;
+      display:grid;
+      grid-template-columns:34px minmax(0,1fr) 28px;
+      align-items:center;
+      min-height:29px;
+      padding:0;
+      border-radius:0;
+      border:0;
+      background:rgba(255,255,255,.13);
+      color:#fff8ec;
+      text-align:left;
+      cursor:pointer;
+      font-weight:850;
+      box-shadow:none;
+    }
+    .competitor + .competitor{border-top:1px solid rgba(0,0,0,.33)}
+    .competitor:hover{transform:none;background:rgba(255,255,255,.2)}
+    .competitor:disabled{cursor:not-allowed;opacity:.78;background:rgba(255,255,255,.09);color:rgba(255,255,255,.55)}
+    .competitor .slot{
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,.12);
+      color:rgba(255,255,255,.62);
+      font-size:.73rem;
+      font-weight:900;
+    }
+    .competitor .name{
+      min-width:0;
+      padding:6px 8px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      line-height:1.1;
+    }
+    .competitor .tick{opacity:0;text-align:center;font-size:.9rem;color:#241500;font-weight:1000}
+    .competitor.winner{
+      background:linear-gradient(180deg,#ffe5ab,#f2b84b);
+      color:#241500;
+    }
+    .competitor.winner .slot{background:rgba(0,0,0,.11);color:rgba(36,21,0,.72)}
+    .competitor.winner .tick{opacity:1}
+    .competitor.bye{font-style:italic;color:rgba(255,255,255,.43)}
+    .competitor.pending{color:rgba(255,255,255,.35)}
+
+    .winner-panel{
+      padding:18px;
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:12px;
+      align-items:center;
+      border-top:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.18);
+    }
+    .winner-panel p{margin:0;color:var(--muted);font-size:.9rem;line-height:1.45}
+    .winner-name{
+      font-size:clamp(1.2rem,2.6vw,2rem);
+      font-weight:950;
+      color:var(--accent-2);
+      letter-spacing:-.03em;
+    }
+
+    .third-place-card{
+      width:265px;
+      min-height:58px;
+      border-radius:13px;
+      background:rgba(244,239,228,.08);
+      border:1px dashed rgba(244,239,228,.25);
+      overflow:hidden;
+      z-index:3;
+      align-self:center;
+    }
+    .third-place-title{
+      margin:0 0 8px;
+      color:var(--muted);
+      font-size:.8rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      font-weight:900;
+    }
+
+    .empty-state{
+      padding:34px;
+      color:var(--muted);
+      line-height:1.5;
+    }
+
+    @media (max-width:1050px){
+      .app-shell{grid-template-columns:1fr}
+      .controls{position:relative;top:0}
+      textarea{min-height:250px}
+      .summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .scroll-note{display:block}
+    }
+
+    @media (max-width:620px){
+      header{padding:22px 14px 14px}
+      main{padding:14px 10px 26px}
+      .section{padding:14px}
+      .button-grid{grid-template-columns:1fr}
+      .summary-grid{grid-template-columns:1fr 1fr}
+      .metric{padding:10px}
+      .bracket-toolbar{align-items:flex-start;flex-direction:column}
+      .bracket{column-gap:36px;padding:22px 20px 34px}
+      .match-card,.third-place-card{width:225px}
+      .competitor{grid-template-columns:30px minmax(0,1fr) 24px;font-size:.86rem}
+      .winner-panel{grid-template-columns:1fr}
+    }
+
+    @media print{
+      body{background:#fff;color:#111}
+      header,.controls,.summary-card,.bracket-toolbar,.winner-panel{display:none!important}
+      main{padding:0}
+      .app-shell{display:block}
+      .bracket-area{box-shadow:none;border:0;background:#fff}
+      .bracket-scroll{overflow:visible}
+      .bracket{transform:scale(.7);transform-origin:top left;background:#fff}
+      .connector-svg path{stroke:#777}
+      .competitor{color:#111;background:#eee}
+      .competitor.winner{background:#ddd;color:#111}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Biscuit World Cup</h1>
+    <p class="subtitle">Edit the biscuit list, generate a random draw, then click the winner of each match. Winners automatically move through the bracket until the final.</p>
+  </header>
+
+  <main>
+    <div class="app-shell">
+      <aside class="controls" aria-label="Bracket controls">
+        <div class="section">
+          <h2>Entries</h2>
+          <textarea id="entries" spellcheck="false" aria-label="Biscuit entries"></textarea>
+          <div class="mini-row">
+            <span>One entry per line. Duplicate names are allowed, but unique names are easier to follow.</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Actions</h2>
+          <div class="button-grid">
+            <button class="primary wide" id="generateBtn">Generate random bracket</button>
+            <button id="shuffleBtn">Shuffle again</button>
+            <button id="clearWinnersBtn">Clear winners</button>
+            <button id="resetBtn">Reset biscuits</button>
+            <button id="addLineBtn">Add blank line</button>
+            <button class="danger" id="clearBtn">Clear entries</button>
+            <button class="wide" id="printBtn">Print / save as PDF</button>
+          </div>
+          <label class="mini-row">
+            <input type="checkbox" id="thirdPlaceToggle" />
+            <span>Show a 3rd place match from the losing semi-finalists</span>
+          </label>
+        </div>
+
+        <div class="section compatibility" id="compatibility"></div>
+      </aside>
+
+      <section>
+        <div class="summary-card">
+          <h2>Bracket summary</h2>
+          <div class="summary-grid">
+            <div class="metric"><strong id="entryCount">0</strong><span>entries</span></div>
+            <div class="metric"><strong id="bracketSize">0</strong><span>bracket size</span></div>
+            <div class="metric"><strong id="byeCount">0</strong><span>byes</span></div>
+            <div class="metric"><strong id="roundCount">0</strong><span>rounds</span></div>
+          </div>
+        </div>
+
+        <div class="bracket-area">
+          <div class="bracket-toolbar">
+            <div>
+              <strong id="bracketLabel">No bracket generated yet</strong><br />
+              <span id="bracketHelp">Add at least two entries and generate a bracket.</span>
+            </div>
+            <p class="scroll-note">Scroll sideways to view the whole bracket.</p>
+          </div>
+          <div class="bracket-scroll" id="bracketScroll">
+            <div class="bracket" id="bracket"></div>
+          </div>
+          <div class="winner-panel">
+            <div>
+              <p>Current winner</p>
+              <div class="winner-name" id="winnerName">None yet</div>
+            </div>
+            <button id="scrollFinalBtn">Jump to final</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const DEFAULT_ENTRIES = [
+    "custard creme",
+    "bourbon",
+    "rich tea",
+    "digestive",
+    "hobnob/oat biscuit",
+    "shortcake",
+    "fruit shortcake",
+    "malted milk",
+    "jam creme/jammie dodger",
+    "ginger nut",
+    "nice",
+    "oreo",
+    "choc-chip cookie (maryland style)",
+    "fig roll",
+    "garibaldi",
+    "chocolate finger",
+    "chocolate digestive",
+    "party ring",
+    "pink wafers",
+    "chocolate malted milk",
+    "chocolate hobnob/oat biscuit",
+    "shortbread",
+    "viennese whirls",
+    "danish butter biscuits"
+  ];
+
+  const els = {
+    entries: document.getElementById('entries'),
+    compatibility: document.getElementById('compatibility'),
+    generateBtn: document.getElementById('generateBtn'),
+    shuffleBtn: document.getElementById('shuffleBtn'),
+    clearWinnersBtn: document.getElementById('clearWinnersBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    clearBtn: document.getElementById('clearBtn'),
+    addLineBtn: document.getElementById('addLineBtn'),
+    printBtn: document.getElementById('printBtn'),
+    thirdPlaceToggle: document.getElementById('thirdPlaceToggle'),
+    bracket: document.getElementById('bracket'),
+    bracketScroll: document.getElementById('bracketScroll'),
+    bracketLabel: document.getElementById('bracketLabel'),
+    bracketHelp: document.getElementById('bracketHelp'),
+    entryCount: document.getElementById('entryCount'),
+    bracketSize: document.getElementById('bracketSize'),
+    byeCount: document.getElementById('byeCount'),
+    roundCount: document.getElementById('roundCount'),
+    winnerName: document.getElementById('winnerName'),
+    scrollFinalBtn: document.getElementById('scrollFinalBtn')
+  };
+
+  let slots = [];
+  let selections = new Map();
+  let currentRounds = [];
+  let thirdPlaceSelection = null;
+
+  function parseEntries(){
+    return els.entries.value
+      .split(/\r?\n/)
+      .map(v => v.trim())
+      .filter(Boolean);
+  }
+
+  function escapeHtml(str){
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#039;');
+  }
+
+  function shuffle(arr){
+    const copy = [...arr];
+    for(let i = copy.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function nextPowerOfTwo(n){
+    if(n <= 1) return 2;
+    return 2 ** Math.ceil(Math.log2(n));
+  }
+
+  function prevPowerOfTwo(n){
+    if(n <= 1) return 0;
+    return 2 ** Math.floor(Math.log2(n));
+  }
+
+  function isPowerOfTwo(n){
+    return n > 1 && (n & (n - 1)) === 0;
+  }
+
+  function roundTitle(matchCount, roundIndex){
+    if(matchCount === 1) return 'Final';
+    if(matchCount === 2) return 'Semi-finals';
+    if(matchCount === 4) return 'Quarter-finals';
+    const teams = matchCount * 2;
+    if(teams === 16) return 'Round of 16';
+    if(teams === 32) return 'Round of 32';
+    if(teams === 64) return 'Round of 64';
+    return `Round ${roundIndex + 1}`;
+  }
+
+  function makeSlots(entries){
+    const bracketSize = nextPowerOfTwo(entries.length);
+    const byeCount = bracketSize - entries.length;
+    const shuffledEntries = shuffle(entries);
+
+    if(byeCount === 0) return shuffledEntries;
+
+    const matchCount = bracketSize / 2;
+    const byeMatches = new Set(shuffle([...Array(matchCount).keys()]).slice(0, byeCount));
+    const output = [];
+    let i = 0;
+
+    for(let m = 0; m < matchCount; m++){
+      if(byeMatches.has(m)){
+        const pair = Math.random() < 0.5 ? [shuffledEntries[i++], null] : [null, shuffledEntries[i++]];
+        output.push(...pair);
+      } else {
+        output.push(shuffledEntries[i++], shuffledEntries[i++]);
+      }
+    }
+
+    return output;
+  }
+
+  function computeRounds(){
+    if(slots.length < 2) return [];
+    const rounds = [];
+    let matchCount = slots.length / 2;
+
+    for(let r = 0; matchCount >= 1; r++){
+      const matches = [];
+      for(let m = 0; m < matchCount; m++){
+        let a = null;
+        let b = null;
+
+        if(r === 0){
+          a = slots[m * 2] || null;
+          b = slots[m * 2 + 1] || null;
+        } else {
+          const prevA = rounds[r - 1].matches[m * 2];
+          const prevB = rounds[r - 1].matches[m * 2 + 1];
+          a = prevA ? prevA.winner : null;
+          b = prevB ? prevB.winner : null;
+        }
+
+        let winner = null;
+        const key = `${r}-${m}`;
+        const selected = selections.get(key);
+
+        if(a && !b) winner = a;
+        else if(!a && b) winner = b;
+        else if(a && b && (selected === a || selected === b)) winner = selected;
+
+        matches.push({round:r,index:m,a,b,winner,key});
+      }
+      rounds.push({index:r,title:roundTitle(matchCount, r),matches});
+      matchCount = matchCount / 2;
+    }
+
+    return rounds;
+  }
+
+  function semiFinalLosers(rounds){
+    if(rounds.length < 2) return [];
+    const semi = rounds.find(r => r.matches.length === 2);
+    if(!semi) return [];
+    return semi.matches.map(match => {
+      if(!match.a || !match.b || !match.winner) return null;
+      return match.winner === match.a ? match.b : match.a;
+    }).filter(Boolean);
+  }
+
+  function getWinner(rounds){
+    if(!rounds.length) return null;
+    const finalRound = rounds[rounds.length - 1];
+    return finalRound.matches[0]?.winner || null;
+  }
+
+  function updateCompatibility(){
+    const entries = parseEntries();
+    const count = entries.length;
+    const bracketSize = count ? nextPowerOfTwo(count) : 0;
+    const byes = count >= 2 ? bracketSize - count : 0;
+    const rounds = count >= 2 ? Math.log2(bracketSize) : 0;
+    const perfect = isPowerOfTwo(count);
+    const previous = prevPowerOfTwo(count);
+
+    els.entryCount.textContent = count;
+    els.bracketSize.textContent = bracketSize || 0;
+    els.byeCount.textContent = byes || 0;
+    els.roundCount.textContent = rounds || 0;
+
+    if(count === 0){
+      els.compatibility.innerHTML = `
+        <div class="pill-row"><span class="pill bad">No entries</span></div>
+        <p class="hint">Add at least two biscuits to create a bracket.</p>`;
+      return;
+    }
+
+    if(count === 1){
+      els.compatibility.innerHTML = `
+        <div class="pill-row"><span class="pill bad">Only 1 entry</span></div>
+        <p class="hint">You need at least two biscuits for a head-to-head match.</p>`;
+      return;
+    }
+
+    if(perfect){
+      els.compatibility.innerHTML = `
+        <div class="pill-row">
+          <span class="pill good">Clean bracket</span>
+          <span class="pill good">No byes</span>
+        </div>
+        <p class="hint"><strong>${count}</strong> entries is ideal. Every biscuit is paired in Round 1 and the winners progress evenly through each round.</p>`;
+    } else {
+      const addNeeded = bracketSize - count;
+      const removeNeeded = previous > 1 ? count - previous : 0;
+      els.compatibility.innerHTML = `
+        <div class="pill-row">
+          <span class="pill warn">Not a power of 2</span>
+          <span class="pill warn">${byes} automatic bye${byes === 1 ? '' : 's'}</span>
+        </div>
+        <p class="hint"><strong>${count}</strong> entries needs a <strong>${bracketSize}</strong>-slot bracket, so the generator will add <strong>${byes}</strong> random bye${byes === 1 ? '' : 's'} and keep every winner on a proper path to the final.</p>
+        <p class="hint">For everyone to play in Round 1 with no byes, use <strong>${previous}</strong> entries or add <strong>${addNeeded}</strong> more to reach <strong>${bracketSize}</strong>.</p>`;
+    }
+  }
+
+  function renderBracket(){
+    updateCompatibility();
+    currentRounds = computeRounds();
+    const rounds = currentRounds;
+    els.bracket.innerHTML = '';
+
+    if(!rounds.length){
+      els.bracket.style.gridTemplateColumns = '1fr';
+      els.bracket.style.gridTemplateRows = 'auto';
+      els.bracket.innerHTML = `<div class="empty-state">No bracket yet. Add at least two entries, then press <strong>Generate random bracket</strong>.</div>`;
+      els.bracketLabel.textContent = 'No bracket generated yet';
+      els.bracketHelp.textContent = 'Add at least two entries and generate a bracket.';
+      els.winnerName.textContent = 'None yet';
+      return;
+    }
+
+    const bracketSize = slots.length;
+    const totalRows = bracketSize * 4 + 8;
+    const totalColumns = rounds.length + (els.thirdPlaceToggle.checked ? 1 : 0);
+    els.bracket.style.gridTemplateRows = `repeat(${totalRows}, var(--row))`;
+    els.bracket.style.gridTemplateColumns = `repeat(${totalColumns}, 265px)`;
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('connector-svg');
+    svg.setAttribute('aria-hidden','true');
+    els.bracket.appendChild(svg);
+
+    rounds.forEach((round, r) => {
+      const title = document.createElement('div');
+      title.className = 'round-title';
+      title.style.gridColumn = String(r + 1);
+      title.textContent = round.title;
+      els.bracket.appendChild(title);
+
+      round.matches.forEach(match => {
+        const startSlot = match.index * (2 ** (r + 1));
+        const endSlot = ((match.index + 1) * (2 ** (r + 1))) - 1;
+        const centerRow = (startSlot + endSlot) * 2 + 8;
+        const rowStart = Math.max(4, centerRow - 3);
+
+        const card = document.createElement('div');
+        card.className = 'match-card';
+        card.dataset.round = String(r);
+        card.dataset.match = String(match.index);
+        card.style.gridColumn = String(r + 1);
+        card.style.gridRow = `${rowStart} / span 7`;
+        card.innerHTML = competitorHtml(match, 'a') + competitorHtml(match, 'b');
+        els.bracket.appendChild(card);
+      });
+    });
+
+    if(els.thirdPlaceToggle.checked){
+      renderThirdPlace(rounds, rounds.length + 1, totalRows);
+    }
+
+    els.bracketLabel.textContent = `${parseEntries().length} entries in a ${slots.length}-slot bracket`;
+    els.bracketHelp.textContent = slots.includes(null)
+      ? 'Byes are automatic. Click a biscuit name to pick the winner of each contested match.'
+      : 'Click a biscuit name to pick the winner of each match.';
+
+    const winner = getWinner(rounds);
+    els.winnerName.textContent = winner || 'None yet';
+
+    requestAnimationFrame(drawConnectors);
+  }
+
+  function competitorHtml(match, side){
+    const name = match[side];
+    const slotLabel = side === 'a' ? 'A' : 'B';
+    const isWinner = name && match.winner === name;
+    const hasBoth = Boolean(match.a && match.b);
+    const disabled = !name || !hasBoth;
+    const classes = [
+      'competitor',
+      isWinner ? 'winner' : '',
+      !name ? (match.a || match.b ? 'bye' : 'pending') : '',
+    ].filter(Boolean).join(' ');
+    const display = name ? escapeHtml(name) : (match.a || match.b ? 'BYE' : 'Awaiting winner');
+    const title = name ? escapeHtml(name) : display;
+    return `
+      <button class="${classes}" data-select="${side}" data-round="${match.round}" data-match="${match.index}" ${disabled ? 'disabled' : ''} title="${title}">
+        <span class="slot">${slotLabel}</span>
+        <span class="name">${display}</span>
+        <span class="tick">✓</span>
+      </button>`;
+  }
+
+  function renderThirdPlace(rounds, column, totalRows){
+    const losers = semiFinalLosers(rounds);
+    const wrapper = document.createElement('div');
+    wrapper.style.gridColumn = String(column);
+    wrapper.style.gridRow = `${Math.max(9, Math.floor(totalRows * .68))} / span 12`;
+    wrapper.style.zIndex = '3';
+
+    const a = losers[0] || null;
+    const b = losers[1] || null;
+    const hasBoth = Boolean(a && b);
+    if(thirdPlaceSelection !== a && thirdPlaceSelection !== b) thirdPlaceSelection = null;
+
+    const button = (name, side) => {
+      const isWinner = name && thirdPlaceSelection === name;
+      const classes = ['competitor', isWinner ? 'winner' : '', !name ? 'pending' : ''].filter(Boolean).join(' ');
+      return `<button class="${classes}" data-third-place="${side}" ${!hasBoth ? 'disabled' : ''} title="${name ? escapeHtml(name) : 'Awaiting semi-final loser'}">
+        <span class="slot">${side.toUpperCase()}</span>
+        <span class="name">${name ? escapeHtml(name) : 'Awaiting semi-final loser'}</span>
+        <span class="tick">✓</span>
+      </button>`;
+    };
+
+    wrapper.innerHTML = `
+      <p class="third-place-title">3rd place match</p>
+      <div class="third-place-card">${button(a,'a')}${button(b,'b')}</div>`;
+    els.bracket.appendChild(wrapper);
+  }
+
+  function drawConnectors(){
+    const svg = els.bracket.querySelector('.connector-svg');
+    if(!svg || !currentRounds.length) return;
+    svg.innerHTML = '';
+
+    const width = els.bracket.scrollWidth;
+    const height = els.bracket.scrollHeight;
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    currentRounds.forEach((round, r) => {
+      if(r >= currentRounds.length - 1) return;
+      round.matches.forEach(match => {
+        const from = els.bracket.querySelector(`.match-card[data-round="${r}"][data-match="${match.index}"]`);
+        const to = els.bracket.querySelector(`.match-card[data-round="${r + 1}"][data-match="${Math.floor(match.index / 2)}"]`);
+        if(!from || !to) return;
+        const x1 = from.offsetLeft + from.offsetWidth;
+        const y1 = from.offsetTop + from.offsetHeight / 2;
+        const x2 = to.offsetLeft;
+        const y2 = to.offsetTop + to.offsetHeight / 2;
+        const mid = x1 + Math.max(18, (x2 - x1) / 2);
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M ${x1} ${y1} H ${mid} V ${y2} H ${x2}`);
+        svg.appendChild(path);
+      });
+    });
+  }
+
+  function generate(){
+    const entries = parseEntries();
+    if(entries.length < 2){
+      slots = [];
+      selections.clear();
+      thirdPlaceSelection = null;
+      renderBracket();
+      return;
+    }
+    slots = makeSlots(entries);
+    selections.clear();
+    thirdPlaceSelection = null;
+    renderBracket();
+  }
+
+  function clearWinners(){
+    selections.clear();
+    thirdPlaceSelection = null;
+    renderBracket();
+  }
+
+  els.bracket.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-select]');
+    const third = e.target.closest('button[data-third-place]');
+
+    if(btn){
+      const r = Number(btn.dataset.round);
+      const m = Number(btn.dataset.match);
+      const side = btn.dataset.select;
+      const match = currentRounds[r]?.matches[m];
+      if(!match) return;
+      const selectedName = match[side];
+      if(!selectedName || !(match.a && match.b)) return;
+      selections.set(`${r}-${m}`, selectedName);
+      renderBracket();
+    }
+
+    if(third){
+      const losers = semiFinalLosers(currentRounds);
+      const selectedName = third.dataset.thirdPlace === 'a' ? losers[0] : losers[1];
+      if(selectedName) thirdPlaceSelection = selectedName;
+      renderBracket();
+    }
+  });
+
+  els.generateBtn.addEventListener('click', generate);
+  els.shuffleBtn.addEventListener('click', generate);
+  els.clearWinnersBtn.addEventListener('click', clearWinners);
+  els.resetBtn.addEventListener('click', () => {
+    els.entries.value = DEFAULT_ENTRIES.join('\n');
+    generate();
+  });
+  els.clearBtn.addEventListener('click', () => {
+    els.entries.value = '';
+    slots = [];
+    selections.clear();
+    thirdPlaceSelection = null;
+    renderBracket();
+  });
+  els.addLineBtn.addEventListener('click', () => {
+    const text = els.entries.value;
+    els.entries.value = text.trimEnd() + (text.trimEnd() ? '\n' : '') + '';
+    els.entries.focus();
+    els.entries.setSelectionRange(els.entries.value.length, els.entries.value.length);
+    updateCompatibility();
+  });
+  els.printBtn.addEventListener('click', () => window.print());
+  els.thirdPlaceToggle.addEventListener('change', renderBracket);
+  els.entries.addEventListener('input', updateCompatibility);
+  els.scrollFinalBtn.addEventListener('click', () => {
+    els.bracketScroll.scrollTo({left: els.bracketScroll.scrollWidth, behavior:'smooth'});
+  });
+  window.addEventListener('resize', () => requestAnimationFrame(drawConnectors));
+
+  els.entries.value = DEFAULT_ENTRIES.join('\n');
+  generate();
+})();
+</script>
+</body>
+</html>
